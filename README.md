@@ -22,4 +22,6 @@ This project aims to empower traders with tools to analyze item values, detect a
 
 ---
 
+I also hope to integrate this with an arbitrage trading bot for TF2 made by GitHub creator offish (offish/tf2-arbitrage) to allow users to track trades their bots make on the website. 
+
 Stay tuned for updates as development progresses. Contributions and feedback welcome once the public beta is live!
