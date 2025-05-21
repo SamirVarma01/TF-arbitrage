@@ -18,6 +18,7 @@ import (
 type PriceData struct {
 	KeyPriceInRef float64 `json:"keyPriceInRef"`
 	RefPriceInUSD float64 `json:"refPriceInUSD"`
+	KeyPriceInUSD float64 `json:"keyPriceInUSD"`
 	LastUpdated   string  `json:"lastUpdated"`
 }
 
@@ -96,12 +97,6 @@ func main() {
 func getPrices(w http.ResponseWriter, r *http.Request) {
 	// Get API key from environment
 	apiKey := os.Getenv("BACKPACK_TF_API_KEY")
-	if apiKey == "" {
-		log.Printf("Error: BACKPACK_TF_API_KEY not set")
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
 	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -119,6 +114,7 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 	q := req.URL.Query()
 	q.Add("key", apiKey)
 	q.Add("appid", "440") // TF2's app ID
+	q.Add("raw", "1") // Request raw data for value_raw field
 	req.URL.RawQuery = q.Encode()
 
 	// Make the request
@@ -156,7 +152,8 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 	// Create response
 	prices := PriceData{
 		KeyPriceInRef: bpResponse.Response.Currencies.Keys.Price.Value,
-		RefPriceInUSD: bpResponse.Response.Currencies.Refined.Price.Value,
+		RefPriceInUSD: bpResponse.Response.Currencies.Refined.Price.ValueRaw,
+		KeyPriceInUSD: bpResponse.Response.Currencies.Keys.Price.ValueRaw,
 		LastUpdated:   time.Now().Format(time.RFC3339),
 	}
 
@@ -174,10 +171,6 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 
 	item := r.URL.Query().Get("item")
 	quality := r.URL.Query().Get("quality")
-	if item == "" || quality == "" {
-		http.Error(w, "Missing item or quality parameter", http.StatusBadRequest)
-		return
-	}
 
 	timeframe := r.URL.Query().Get("timeframe") // e.g., "7days", "30days", "90days", "1year", "3years"
 	if timeframe == "" {

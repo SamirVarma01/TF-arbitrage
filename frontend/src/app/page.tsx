@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/mobile-nav"
 interface PriceData {
   keyPriceInRef: number;
   refPriceInUSD: number;
+  keyPriceInUSD: number;
   lastUpdated: string;
 }
 
@@ -157,7 +158,7 @@ export default function Home() {
                         {`${currentPrices.keyPriceInRef.toFixed(2)} Ref`}
                       </div>
                       <div className="text-sm text-blue-300 mt-1">
-                        {`${(currentPrices.keyPriceInRef * currentPrices.refPriceInUSD).toFixed(2)} USD`}
+                        {`${currentPrices.keyPriceInUSD.toFixed(2)} USD`}
                       </div>
                       <div className="text-sm text-blue-300 mt-1">Last updated: {new Date(currentPrices.lastUpdated).toLocaleTimeString()}</div>
                     </>
@@ -172,14 +173,13 @@ export default function Home() {
             <CardHeader>
               <CardTitle className="text-2xl">Historical Price Data</CardTitle>
               <CardDescription className="text-blue-300">
-                Track price trends over time for key TF2 currencies
+                Track price trends over time for TF2 currencies
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="30days" className="w-full">
                 <div className="flex items-center justify-between mb-4">
                   <TabsList className="bg-blue-950/50">
-                    <TabsTrigger value="7days" onClick={() => setTimeframe('7days')}>7 Days</TabsTrigger>
                     <TabsTrigger value="30days" onClick={() => setTimeframe('30days')}>30 Days</TabsTrigger>
                     <TabsTrigger value="90days" onClick={() => setTimeframe('90days')}>90 Days</TabsTrigger>
                     <TabsTrigger value="1year" onClick={() => setTimeframe('1year')}>1 Year</TabsTrigger>

@@ -27,7 +27,7 @@ export function PriceChart({ refinedData, keyData }: PriceChartProps) {
       refined: refinedPoint.value,
       key: keyPoint ? keyPoint.value : null, // Handle cases where a timestamp might not exist for both
     };
-  }).filter(point => point.key !== null); // Filter out points where key data is missing
+  }) // Filter out points where key data is missing
 
   return (
     <ResponsiveContainer width="100%" height="100%">
