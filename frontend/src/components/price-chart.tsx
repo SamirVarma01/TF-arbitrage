@@ -15,15 +15,11 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ refinedData, keyData, selectedItem }: PriceChartProps) {
-  // Determine which data to use based on selectedItem
   const dataToDisplay = selectedItem === 'refined' ? refinedData : keyData;
-
-  // Add a check to ensure data is valid before processing
   if (!dataToDisplay || !Array.isArray(dataToDisplay) || dataToDisplay.length === 0) {
     return <div className="w-full h-full flex items-center justify-center text-blue-300">Loading or no data available.</div>;
   }
 
-  // Format data for the chart - only process the selected item's data
   const chartData = dataToDisplay.map(point => ({
     date: new Date(point.timestamp * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     value: point.value,

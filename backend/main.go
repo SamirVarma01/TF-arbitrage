@@ -13,16 +13,12 @@ import (
 	"github.com/rs/cors"
 	"github.com/joho/godotenv"
 )
-
-// PriceData represents the current prices of TF2 items
 type PriceData struct {
 	KeyPriceInRef float64 `json:"keyPriceInRef"`
 	RefPriceInUSD float64 `json:"refPriceInUSD"`
 	KeyPriceInUSD float64 `json:"keyPriceInUSD"`
 	LastUpdated   string  `json:"lastUpdated"`
 }
-
-// BackpackTFResponse represents the response from backpack.tf API
 type BackpackTFResponse struct {
 	Response struct {
 		Success int `json:"success"`
@@ -59,20 +55,16 @@ type PriceHistoryResponse struct {
 }
 
 func main() {
-	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Printf("Warning: .env file not found")
 	}
 
-	// Create a new router
 	r := mux.NewRouter()
 
-	// API routes
 	r.HandleFunc("/api/prices", getPrices).Methods("GET")
 	r.HandleFunc("/api/prices/history", getPriceHistory).Methods("GET")
 	r.HandleFunc("/api/items/search", searchItems).Methods("GET")
 
-	// CORS middleware
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
@@ -80,7 +72,6 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	// Create server with timeout settings
 	srv := &http.Server{
 		Handler:      c.Handler(r),
 		Addr:         ":8080",
@@ -88,21 +79,16 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	// Start server
 	log.Printf("Server starting on port 8080...")
 	log.Fatal(srv.ListenAndServe())
 }
 
-// getPrices returns the current prices of keys and refined metal
 func getPrices(w http.ResponseWriter, r *http.Request) {
-	// Get API key from environment
 	apiKey := os.Getenv("BACKPACK_TF_API_KEY")
-	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	// Make request to backpack.tf API
 	req, err := http.NewRequest("GET", "https://backpack.tf/api/IGetCurrencies/v1", nil)
 	if err != nil {
 		log.Printf("Error creating request: %v", err)
@@ -110,14 +96,12 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add API key to request
 	q := req.URL.Query()
 	q.Add("key", apiKey)
-	q.Add("appid", "440") // TF2's app ID
-	q.Add("raw", "1") // Request raw data for value_raw field
+	q.Add("appid", "440") 
+	q.Add("raw", "1") 
 	req.URL.RawQuery = q.Encode()
 
-	// Make the request
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error making request: %v", err)
@@ -126,7 +110,6 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Error reading response: %v", err)
@@ -134,7 +117,6 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse response
 	var bpResponse BackpackTFResponse
 	if err := json.Unmarshal(body, &bpResponse); err != nil {
 		log.Printf("Error parsing response: %v", err)
@@ -142,14 +124,12 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if request was successful
 	if bpResponse.Response.Success != 1 {
 		log.Printf("Backpack.tf API error: %s", string(body))
 		http.Error(w, "Error fetching prices", http.StatusInternalServerError)
 		return
 	}
 
-	// Create response
 	prices := PriceData{
 		KeyPriceInRef: bpResponse.Response.Currencies.Keys.Price.Value,
 		RefPriceInUSD: bpResponse.Response.Currencies.Refined.Price.ValueRaw,
@@ -161,7 +141,6 @@ func getPrices(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(prices)
 }
 
-// getPriceHistory returns historical price data
 func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 	apiKey := os.Getenv("BACKPACK_TF_API_KEY")
 	if apiKey == "" {
@@ -172,12 +151,11 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 	item := r.URL.Query().Get("item")
 	quality := r.URL.Query().Get("quality")
 
-	timeframe := r.URL.Query().Get("timeframe") // e.g., "7days", "30days", "90days", "1year", "3years"
+	timeframe := r.URL.Query().Get("timeframe") 
 	if timeframe == "" {
-		timeframe = "30days" // Default timeframe
+		timeframe = "30days" 
 	}
 
-	// Build backpack.tf API request
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", "https://backpack.tf/api/IGetPriceHistory/v1", nil)
 	if err != nil {
@@ -188,7 +166,7 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 	q.Add("key", apiKey)
 	q.Add("item", item)
 	q.Add("quality", quality)
-	q.Add("appid", "440") // TF2's app ID
+	q.Add("appid", "440") 
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)
@@ -226,7 +204,6 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filter history by timeframe on the backend
 	var cutoff int64
 	now := time.Now().Unix()
 	switch timeframe {
@@ -241,7 +218,7 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 	case "3years":
 		cutoff = now - 3*365*24*60*60
 	default:
-		cutoff = 0 // Return all if timeframe is invalid or not specified
+		cutoff = 0 
 	}
 
 	filteredPoints := []PriceHistoryPoint{}
@@ -263,9 +240,7 @@ func getPriceHistory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(respData)
 }
 
-// searchItems handles item search requests
 func searchItems(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement item search functionality
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Not implemented yet"})
 } 
