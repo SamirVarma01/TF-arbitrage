@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PriceChart } from "@/components/price-chart"
 import { MobileNav } from "@/components/mobile-nav"
+import { Select } from "@/components/ui/select"
 
 interface PriceData {
   keyPriceInRef: number;
@@ -32,7 +33,8 @@ export default function Home() {
   const [currentPrices, setCurrentPrices] = useState<PriceData | null>(null)
   const [keyHistory, setKeyHistory] = useState<PriceHistoryData | null>(null)
   const [refinedHistory, setRefinedHistory] = useState<PriceHistoryData | null>(null)
-  const [timeframe, setTimeframe] = useState<string>('30days')
+  const [timeframe, setTimeframe] = useState<string>('3years')
+  const [selectedItem, setSelectedItem] = useState<string>('refined')
   const [loadingPrices, setLoadingPrices] = useState(true)
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [errorPrices, setErrorPrices] = useState<string | null>(null)
@@ -68,10 +70,11 @@ export default function Home() {
       }
     }
 
+    // Fetch history for both items when timeframe changes
     fetchHistory('Mann Co. Supply Crate Key', setKeyHistory)
     fetchHistory('Refined Metal', setRefinedHistory)
 
-  }, [timeframe])
+  }, [timeframe]) // Dependency is only timeframe
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-blue-950 via-blue-900 to-black text-white">
@@ -132,14 +135,14 @@ export default function Home() {
                   <CardTitle className="text-2xl">Refined Metal</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loadingPrices && <div className="text-3xl font-bold">Loading...</div>}
-                  {errorPrices && <div className="text-sm text-red-400">{errorPrices}</div>}
-                  {currentPrices && (
+                  {loadingHistory && <div className="text-3xl font-bold">Loading...</div>}
+                  {errorHistory && <div className="text-sm text-red-400">{errorHistory}</div>}
+                  {!loadingHistory && !errorHistory && refinedHistory && refinedHistory.points.length > 0 && (
                     <>
                       <div className="text-3xl font-bold">
-                        {`${currentPrices.refPriceInUSD.toFixed(2)} USD`}
+                        {`${refinedHistory.points[refinedHistory.points.length - 1].value.toFixed(3)} USD`}
                       </div>
-                      <div className="text-sm text-blue-300 mt-1">Last updated: {new Date(currentPrices.lastUpdated).toLocaleTimeString()}</div>
+                      <div className="text-sm text-blue-300 mt-1">Last updated: {new Date(refinedHistory.points[refinedHistory.points.length - 1].timestamp * 1000).toLocaleTimeString()}</div>
                     </>
                   )}
                 </CardContent>
@@ -156,9 +159,6 @@ export default function Home() {
                     <>
                       <div className="text-3xl font-bold">
                         {`${currentPrices.keyPriceInRef.toFixed(2)} Ref`}
-                      </div>
-                      <div className="text-sm text-blue-300 mt-1">
-                        {`${currentPrices.keyPriceInUSD.toFixed(2)} USD`}
                       </div>
                       <div className="text-sm text-blue-300 mt-1">Last updated: {new Date(currentPrices.lastUpdated).toLocaleTimeString()}</div>
                     </>
@@ -185,31 +185,22 @@ export default function Home() {
                     <TabsTrigger value="1year" onClick={() => setTimeframe('1year')}>1 Year</TabsTrigger>
                     <TabsTrigger value="3years" onClick={() => setTimeframe('3years')}>3 Years</TabsTrigger>
                   </TabsList>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 border-blue-700 text-blue-100 hover:bg-blue-800/50"
-                    >
-                      Refined Metal
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 border-blue-700 text-blue-100 hover:bg-blue-800/50"
-                    >
-                      Mann Co. Key
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Select
+                    value={selectedItem}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                    options={[
+                      { value: 'refined', label: 'Refined Metal' },
+                      { value: 'key', label: 'Mann Co. Key' },
+                    ]}
+                    className="bg-blue-950/50"
+                  />
                 </div>
                 <TabsContent value="7days">
                   <div className="h-[400px]">
                     {loadingHistory && <div className="text-blue-300">Loading chart data...</div>}
                     {errorHistory && <div className="text-red-400">{errorHistory}</div>}
                     {!loadingHistory && !errorHistory && refinedHistory && keyHistory && (
-                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} />
+                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} selectedItem={selectedItem} />
                     )}
                   </div>
                 </TabsContent>
@@ -218,7 +209,11 @@ export default function Home() {
                     {loadingHistory && <div className="text-blue-300">Loading chart data...</div>}
                     {errorHistory && <div className="text-red-400">{errorHistory}</div>}
                     {!loadingHistory && !errorHistory && refinedHistory && keyHistory && (
-                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} />
+                      <PriceChart 
+                        refinedData={refinedHistory.points} 
+                        keyData={keyHistory.points} 
+                        selectedItem={selectedItem}
+                      />
                     )}
                   </div>
                 </TabsContent>
@@ -227,7 +222,11 @@ export default function Home() {
                     {loadingHistory && <div className="text-blue-300">Loading chart data...</div>}
                     {errorHistory && <div className="text-red-400">{errorHistory}</div>}
                     {!loadingHistory && !errorHistory && refinedHistory && keyHistory && (
-                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} />
+                      <PriceChart 
+                        refinedData={refinedHistory.points} 
+                        keyData={keyHistory.points} 
+                        selectedItem={selectedItem}
+                      />
                     )}
                   </div>
                 </TabsContent>
@@ -236,7 +235,11 @@ export default function Home() {
                     {loadingHistory && <div className="text-blue-300">Loading chart data...</div>}
                     {errorHistory && <div className="text-red-400">{errorHistory}</div>}
                     {!loadingHistory && !errorHistory && refinedHistory && keyHistory && (
-                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} />
+                      <PriceChart 
+                        refinedData={refinedHistory.points} 
+                        keyData={keyHistory.points} 
+                        selectedItem={selectedItem}
+                      />
                     )}
                   </div>
                 </TabsContent>
@@ -245,7 +248,11 @@ export default function Home() {
                     {loadingHistory && <div className="text-blue-300">Loading chart data...</div>}
                     {errorHistory && <div className="text-red-400">{errorHistory}</div>}
                     {!loadingHistory && !errorHistory && refinedHistory && keyHistory && (
-                      <PriceChart refinedData={refinedHistory.points} keyData={keyHistory.points} />
+                      <PriceChart 
+                        refinedData={refinedHistory.points} 
+                        keyData={keyHistory.points} 
+                        selectedItem={selectedItem}
+                      />
                     )}
                   </div>
                 </TabsContent>
